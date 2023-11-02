@@ -1,0 +1,201 @@
+#include<sys/socket.h>
+#include<sys/types.h>
+#include<netinet/in.h>
+#include<arpa/inet.h>
+#include<string.h>
+#include<stdio.h>
+#include<stdlib.h>
+
+
+struct sockaddr_in serv_addr, cli_addr;
+int listenfd,connfd,r,w,val,cli_addr_len;
+unsigned short serv_port=5001 ;
+char serv_ip[]= "192.168.24.40" ;
+char buff[128];
+ 
+int main()
+{
+    listenfd=socket(AF_INET,SOCK_STREAM,0);
+    
+    if(listenfd<0)
+    {
+        printf("\nSERVER ERROR: Cannot Create Socket.\n");
+        exit(1);
+    }
+    serv_addr.sin_family=AF_INET;
+    serv_addr.sin_port=htons(serv_port);
+    inet_aton(serv_ip,(&serv_addr.sin_addr));
+    
+    printf("\nTCP ECHO SERVER\n");
+    
+    
+    
+    int pqr=bind(listenfd, (struct sockaddr*)&serv_addr,sizeof(serv_addr));
+    if(pqr < 0)
+    {
+        printf("\nSERVER ERROR: Cannot bind.\n");
+        close(listenfd);
+        exit(1);
+    }
+    
+    
+    int xyz=(listen(listenfd,5)) ;
+    if(xyz < 0)
+    {
+        printf("\nSERVER ERROR: Cannot listen.\n");
+        close(listenfd);
+        exit(1);
+    }
+    
+    cli_addr_len= sizeof(cli_addr);
+    
+    for (;;) {
+        printf("\nSERVER: Listenning for clients...Press Cntrl + c to stop echo server:\n");
+        connfd = accept(listenfd, (struct sockaddr*)&cli_addr, &cli_addr_len);
+        // ... (Same as your original server code)
+        
+        while (1) {
+            r = read(connfd, buff, sizeof(buff));
+            if (r <= 0) {
+                printf("\nSERVER: Client %s disconnected.\n", inet_ntoa(cli_addr.sin_addr));
+                break;
+            } 
+            else {
+                buff[r] = '\0';
+                
+                // Split received messages using delimiter
+                char *token = strtok(buff, "\n");
+                while (token != NULL) {
+                    printf("\nSERVER: Received message from client %s: %s\n", inet_ntoa(cli_addr.sin_addr), token);
+                    
+                    // Check if the client wants to exit
+                    if (strcmp(token, "bye") == 0) {
+                        printf("\nSERVER: Client %s requested to exit. Closing connection.\n", inet_ntoa(cli_addr.sin_addr));
+                        close(connfd);
+                        break;
+                    }
+                    
+                    w = write(connfd, token, strlen(token));
+                    if (w < 0) {
+                        printf("\nSERVER ERROR: Cannot send message to the client.\n");
+                    } else {
+                        printf("\nSERVER: Echoed back %s to %s.\n", token, inet_ntoa(cli_addr.sin_addr));
+                    }
+                    
+                    token = strtok(NULL, "\n");
+                }
+            }
+        }
+    }
+    close(listenfd);
+    return 0;
+}
+
+ 
+
+ 
+
+ 
+
+ 
+
+client
+
+ 
+
+ 
+
+#include<sys/socket.h>
+#include<sys/types.h>
+#include<netinet/in.h>
+#include<arpa/inet.h>
+#include<string.h>
+#include<stdio.h>
+#include<stdlib.h>
+struct sockaddr_in serv_addr;
+int skfd,r,w;
+unsigned short serv_port=5001 ;
+char serv_ip[]= "192.168.24.40";
+char rbuff[128];
+char sbuff[128]= "HELLO SERVER";
+ 
+int main()
+{    
+
+    skfd=socket(AF_INET,SOCK_STREAM,0);
+    
+    if(skfd <0)
+    {
+        printf("\nCLIENT ERROR: Cannot Create Socket.\n");
+        exit(1);
+    }
+    serv_addr.sin_family=AF_INET;
+    serv_addr.sin_port=htons(serv_port);
+    inet_aton(serv_ip, (&serv_addr.sin_addr));
+    
+     printf("\nTCP ECHO CLIENT\n");
+    
+    int abc = connect(skfd, (struct sockaddr*)&serv_addr, sizeof(serv_addr));
+    
+    if (abc < 0) {
+        printf("\nCLIENT ERROR: Cannot connect to the server.\n");
+        close(skfd);
+        exit(1);
+    }
+    printf("\nCLIENT: Connected to the server.\n");
+
+    while (1) {
+        char message[1024] = "";  // Buffer to store the entire message
+
+        while (1) {
+            char line[128];
+            printf("Enter a line of text (or 'bye' to exit, 'send' to send): ");
+            fgets(line, sizeof(line), stdin);
+
+            // Check if the client wants to exit or send
+            if (strcmp(line, "bye\n") == 0) {
+                printf("\nCLIENT: Exiting chat.\n");
+                close(skfd);
+                exit(0);
+            } else if (strcmp(line, "send\n") == 0) {
+                if (strlen(message) == 0) {
+                    printf("No message to send.\n");
+                } else {
+                    break;  // Exit the loop and send the message
+                }
+            } else {
+                strcat(message, line);  // Add the line to the message
+            }
+        }
+
+        // Allow the user to confirm the message
+        printf("\nYou entered:\n%s\nConfirm sending (y/n): ", message);
+        char confirm;
+        scanf(" %c", &confirm);
+        getchar();  // Clear newline from buffer
+
+        if (confirm == 'y' || confirm == 'Y') {
+            // Send data to server
+            w = write(skfd, message, strlen(message));
+            if (w < 0) {
+                printf("\nCLIENT ERROR: Cannot send message to the echo server.\n");
+                close(skfd);
+                exit(1);
+            }
+
+            // Receive response from server
+            r = read(skfd, rbuff, sizeof(rbuff));
+            if (r < 0) {
+                printf("\nCLIENT ERROR: Cannot receive message from server.\n");
+            } else {
+                rbuff[r] = '\0';
+                printf("SERVER: %s\n", rbuff);
+            }
+        } else {
+            printf("Message not sent.\n");
+        }
+    }
+
+    close(skfd);
+    return 0;
+}

@@ -1,0 +1,170 @@
+#include<sys/socket.h>
+#include<sys/types.h>
+#include<netinet/in.h>
+#include<arpa/inet.h>
+#include<string.h>
+#include<stdio.h>
+#include<stdlib.h>
+
+
+struct sockaddr_in serv_addr, cli_addr;
+int listenfd,connfd,r,w,val,cli_addr_len;
+unsigned short serv_port=5001 ;
+char serv_ip[]= "192.168.24.40" ;
+char buff[128];
+ 
+int main()
+{
+    listenfd=socket(AF_INET,SOCK_STREAM,0);
+    
+    if(listenfd<0)
+    {
+        printf("\nSERVER ERROR: Cannot Create Socket.\n");
+        exit(1);
+    }
+    serv_addr.sin_family=AF_INET;
+    serv_addr.sin_port=htons(serv_port);
+    inet_aton(serv_ip,(&serv_addr.sin_addr));
+    
+    printf("\nTCP ECHO SERVER\n");
+    
+    
+    
+    int pqr=bind(listenfd, (struct sockaddr*)&serv_addr,sizeof(serv_addr));
+    if(pqr < 0)
+    {
+        printf("\nSERVER ERROR: Cannot bind.\n");
+        close(listenfd);
+        exit(1);
+    }
+    
+    
+    int xyz=(listen(listenfd,5)) ;
+    if(xyz < 0)
+    {
+        printf("\nSERVER ERROR: Cannot listen.\n");
+        close(listenfd);
+        exit(1);
+    }
+    
+    cli_addr_len= sizeof(cli_addr);
+    
+    for( ; ;)
+    {
+        printf("\nSERVER: Listenning for clients...Press Cntrl + c to stop echo server:\n");
+        connfd = accept(listenfd, (struct sockaddr*)&cli_addr,&cli_addr_len);
+        if(connfd < 0)
+        {
+            printf("\nSERVER ERROR: Cannot accept client connections.\n");
+            close(listenfd);
+            exit(1);
+        }
+        printf("\nSERVER : Connection from client %s accepted.\n",inet_ntoa(cli_addr.sin_addr));
+        r = read(connfd, buff, 128);
+        if(r < 0)
+            printf("\nSERVER ERROR: Cannot receive message from client.\n");
+        else
+        {
+            buff[r] = '\0';
+            w = write(connfd,buff,128);
+            if(w < 0)
+                printf("\nSERVER ERROR: Cannot send message to the client.\n");
+            else
+                printf("\nSERVER : Echoed back %s to %s.\n",buff,inet_ntoa(cli_addr.sin_addr));
+        }
+    }
+}
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+client
+
+ 
+
+ 
+
+ 
+
+ 
+
+#include<sys/socket.h>
+#include<sys/types.h>
+#include<netinet/in.h>
+#include<arpa/inet.h>
+#include<string.h>
+#include<stdio.h>
+#include<stdlib.h>
+struct sockaddr_in serv_addr;
+int skfd,r,w;
+unsigned short serv_port=5001 ;
+char serv_ip[]= "192.168.24.40";
+char rbuff[128];
+char sbuff[128]= "HELLO SERVER";
+ 
+int main()
+{    
+
+    skfd=socket(AF_INET,SOCK_STREAM,0);
+    
+    if(skfd <0)
+    {
+        printf("\nCLIENT ERROR: Cannot Create Socket.\n");
+        exit(1);
+    }
+    serv_addr.sin_family=AF_INET;
+    serv_addr.sin_port=htons(serv_port);
+    inet_aton(serv_ip, (&serv_addr.sin_addr));
+    
+    printf("\nTCP ECHO CLIENT\n");
+    
+    
+    
+    int abc=connect(skfd, (struct sockaddr*)&serv_addr,sizeof(serv_addr));
+    
+    if(abc < 0)
+    {
+        printf("\nCLIENT ERROR: Cannot connect to the server.\n");
+        close(skfd);
+        exit(1);
+    }
+    printf("\nCLIENT: Connected to the server.\n");
+    
+    w = write(skfd,sbuff,128);
+    
+    if(w < 0)
+    {
+        printf("\nCLIENT ERROR: Cannot send message to the echo server.\n");
+        close(skfd);
+        exit(1);
+    }
+    printf("\nCLIENT : Message sent to echo server.\n");
+    
+        r = read(skfd, rbuff, 128);
+        if(r < 0)
+            printf("\nCLIENT ERROR: Cannot receive message from client.\n");
+        else
+        {
+            rbuff[r] = '\0';
+            printf("\CLIENT:Message from echo server:%s\n",rbuff);
+        }
+        close(skfd);
+        exit(1);
+}

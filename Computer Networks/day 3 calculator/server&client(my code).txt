@@ -1,0 +1,207 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <netinet/in.h>
+#include<string.h>
+#include<sys/types.h>
+#include<sys/socket.h>
+#include<arpa/inet.h>
+
+struct sockaddr_in serv_addr,cli_addr;
+int listenfd,connfd,r1,r2,r3,w1,w2,w3,val,cli_addr_len,result;
+unsigned short serv_port=5001;
+char serv_ip[]="192.168.24.42";
+char rbuff1[128],rbuff2[128],rbuff3[128];
+char sbuff[128];
+char spbuff[128]="CAN NOT DIVIDE BY ZERO";
+char dbuff[128]="WRITE A VALID OPERATOR";
+
+int main()
+{
+    listenfd=socket(AF_INET,SOCK_STREAM,0);
+    if( listenfd < 0 )
+    {
+        printf("\nSERVER ERROR:CAN NOT CREATE SOCKET\n");
+        close(listenfd);
+        exit(1);
+    }
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_port = htons(serv_port);
+    inet_aton(serv_ip, (&serv_addr.sin_addr));
+    printf("\nTCP CALCULATOR SERVER\n");
+    int xyz=bind(listenfd,(struct sockaddr*)&serv_addr,sizeof(serv_addr));
+    if(xyz < 0)
+    {
+        printf("\nSERVER ERROR:CAN NOT BIND\n");
+        close(listenfd);
+        exit(1);
+    }
+    int pqr=listen(listenfd,5);
+    if(pqr < 0)
+    {
+        printf("\nSERVER ERROR:CAN NOT LISTEN\n");
+        close(listenfd);
+        exit(1);
+    }
+    cli_addr_len=sizeof(cli_addr);
+    for(;;)
+    {
+        printf("\nSERVER LISTENING FOR CLIENTS...PRESS Ctrl+C TO STOP CALCULATOR SERVER\n");
+        connfd = accept(listenfd, (struct sockaddr*)&cli_addr, &cli_addr_len);
+        if(connfd < 0)
+            {
+                printf("\n SERVER ERROR: Cannot accept client connections.\n");
+                close(listenfd);
+                exit(1);
+            }
+        printf("\nSERVER CONNECTION FROM CLIENT %s is accepted\n",inet_ntoa(cli_addr.sin_addr));
+        r1=read(connfd,rbuff1,128);
+        if(r1 < 0)
+        {
+            printf("\nSERVER ERROR:CAN NOT RECEIVE THE MESSAGE\n");
+            close(listenfd);
+            exit(1);
+        }
+        r2=read(connfd,rbuff2,128);
+        if(r2 < 0)
+        {
+            printf("\nSERVER ERROR:CAN NOT RECEIVE THE MESSAGE\n");
+            close(listenfd);
+            exit(1);
+        }
+        r3=read(connfd,rbuff3,128);
+        if(r3 < 0)
+        {
+            printf("\nSERVER ERROR:CAN NOT RECEIVE THE MESSAGE\n");
+            close(listenfd);
+            exit(1);
+        }    
+        
+        int r1_num=atoi(rbuff1);
+        int r2_num=atoi(rbuff2);
+        int r3_num=atoi(rbuff3);
+        switch(r3_num)
+        {
+            case 1:
+                result=r1_num+r2_num;
+                break;
+            case 2:
+                result=r1_num-r2_num;
+                break;
+            case 3:
+                result=r1_num*r2_num;
+                break;
+            case 4:
+                if(r2_num==0)
+                {
+                    printf("\nCan not divide by zero\n");
+                    
+                    w1 =write(connfd,spbuff,128);
+                    if(w1  < 0)
+                        printf("\nSERVER ERROR: Cannot send message to the client.\n");
+                    break;
+                }
+                result=r1_num/r2_num;
+                break;
+            default:
+                w2 =write(connfd,dbuff,128);
+                    if(w2  < 0)
+                        printf("\nSERVER ERROR: Cannot send message to the client.\n");
+        }
+        sprintf(sbuff,"%d",result);
+        w3=write(connfd,sbuff,128);
+        if(w3  < 0)
+                    printf("\nSERVER ERROR: Cannot send message to the client.\n");
+                else
+                    printf("\nSERVER: ANSWER: %s send to %s.\n",sbuff,inet_ntoa(cli_addr.sin_addr));
+            }
+    }
+    
+    
+    
+    
+    
+    
+    
+    client
+    
+    
+    
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <netinet/in.h>
+#include<string.h>
+#include<sys/types.h>
+#include<sys/socket.h>
+#include<arpa/inet.h>
+
+struct sockaddr_in serv_addr;
+int skfd,r;
+unsigned short serv_port=5001;
+char serv_ip[]="192.168.24.42";
+char sbuff1[128],sbuff2[128],sbuff3[128];
+char rbuff[128];
+int main()
+{
+    skfd=socket(AF_INET,SOCK_STREAM,0);
+    if( skfd < 0 )
+    {
+        printf("\nCLIENT ERROR:CAN NOT CREATE SOCKET\n");
+        close(skfd);
+        exit(1);
+    }
+    serv_addr.sin_family=AF_INET;
+    serv_addr.sin_port=htons(serv_port);
+    inet_aton(serv_ip,(&serv_addr.sin_addr));
+    printf("\nTCP CALCULATOR SERVER\n");
+    int com=connect(skfd,(struct sockaddr*)&serv_addr,sizeof(serv_addr));
+    if(com < 0)
+    {
+        printf("\nCLIENT ERROR:CAN NOT CONNECT TO THE SERVER\n");
+        close(skfd);
+        exit(1);
+    }
+    printf("\nCLIENT IS CONNECTED TO THE SERVER\n");
+    printf("\nWRITE THE FIRST OPPERAND\n");
+    gets(sbuff1);
+    printf("\nWRITE THE SECOND OPPERAND\n");
+    gets(sbuff2);
+    printf("\nWRITE 1 FOR ADDITION\nWRITE 2 FOR SUBSTRACTION\nWRITE 3 FOR MULTIPLICATION\nWRITE 4 FOR DIVISION\n");
+    gets(sbuff3);
+    int w1=write(skfd,sbuff1,128);
+    if(w1 < 0)
+    {
+        printf("\nCLIENT ERROR:CAN NOT SEND MESSAGE TO THE SERVER\n");
+        close(skfd);
+        exit(1);
+    }
+    int w2=write(skfd,sbuff2,128);
+    if(w2 < 0)
+    {
+        printf("\nCLIENT ERROR:CAN NOT SEND MESSAGE TO THE SERVER\n");
+        close(skfd);
+        exit(1);
+    }
+    int w3=write(skfd,sbuff3,128);
+    if(w3 < 0)
+    {
+        printf("\nCLIENT ERROR:CAN NOT SEND MESSAGE TO THE SERVER\n");
+        close(skfd);
+        exit(1);
+    }
+    printf("\nCLIENT:INFO SEND TO THE SERVER\n");
+    r = read(skfd, rbuff, 128);
+    if(r < 0)
+    {
+        printf("\n CLIENT ERROR: cannot receive message tfrom the server.\n");
+        close(skfd);
+        exit(1);
+    }
+        else
+        {
+            rbuff[r] = '\0';
+            printf("\nCLIENT: ANSWER WILL BE %s\n", rbuff);
+        }
+        close(skfd);
+        exit(1);
+}

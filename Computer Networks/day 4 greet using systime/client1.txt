@@ -1,0 +1,50 @@
+#include<sys/socket.h>
+#include<sys/types.h>
+#include<netinet/in.h>
+#include<arpa/inet.h>
+#include<string.h>
+#include<stdio.h>
+#include<stdlib.h>
+
+
+struct sockaddr_in serv_addr;
+int skfd,r,w1,w2,w3,abc;
+unsigned short serv_port= 5000;
+char serv_ip[]= "192.168.24.43";
+char rbuff[128];
+
+int main(){
+
+    printf("\nTCP ECHO CLIENT\n");
+    skfd=socket(AF_INET,SOCK_STREAM,0);
+    if(skfd<0)
+    {
+        printf("\nCLIENT ERROR: Cannot Create Socket.\n");
+        exit(1);
+    }
+    serv_addr.sin_family=AF_INET;
+    serv_addr.sin_port=htons(serv_port);
+    inet_aton(serv_ip,(&serv_addr.sin_addr));
+    
+    abc = connect(skfd,(struct sockaddr*)&serv_addr,sizeof(serv_addr));
+    
+    if(abc < 0)
+    {
+        printf("\nCLIENT ERROR: Cannot connect to the server.\n");
+        close(skfd);
+        exit(1);
+    }
+
+    printf("\nCLIENT connected to the server.\n");
+    
+        r = read(skfd, rbuff, 128);
+    if(r < 0)
+    printf("\nCLIENT ERROR: Cannot receive message from client.\n");
+    else
+    {
+       rbuff[r] = '\0';
+       printf("\CLIENT:Message from echo server: %s\n",rbuff);
+    }
+    close(skfd);
+    exit(1);
+}

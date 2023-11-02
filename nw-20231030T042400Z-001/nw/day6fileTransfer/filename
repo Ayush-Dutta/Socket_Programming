@@ -1,0 +1,9 @@
+total 64
+-rw-rw-r-- 1 nw1 nw1    29 Sep 25 09:33 abc
+-rw-rw-r-- 1 nw1 nw1    10 Sep 25 09:33 abc.txt
+-rwxrwxr-x 1 nw1 nw1 17528 Sep 25 10:25 clientFile
+-rw-rw-r-- 1 nw1 nw1  1932 Sep 25 10:18 clientFile.c
+-rw-rw-r-- 1 nw1 nw1     0 Oct 16 09:28 filename
+-rwxrwxr-x 1 nw1 nw1 22000 Sep 25 10:40 serverFile
+-rw-rw-r-- 1 nw1 nw1  3410 Sep 25 10:40 serverFile.c
+-rw-rw-r-- 1 nw1 nw1    10 Oct 16 09:28 serverMessage.txt

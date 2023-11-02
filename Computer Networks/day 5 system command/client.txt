@@ -1,0 +1,109 @@
+#include<sys/socket.h>
+#include<sys/types.h>
+#include<netinet/in.h>
+#include<arpa/inet.h>
+#include<string.h>
+#include<stdio.h>
+#include<stdlib.h>
+
+
+struct sockaddr_in serv_addr;
+int skfd,r,w1,w2,w3,abc;
+unsigned short serv_port= 5003;
+char serv_ip[]= "192.168.24.43";
+char rbuff[128];
+char commandBuff[128];
+char commandRes[128];
+
+
+int main(){
+
+    printf("\nTCP ECHO CLIENT\n");
+    skfd=socket(AF_INET,SOCK_STREAM,0);
+    if(skfd<0)
+    {
+        printf("\nCLIENT ERROR: Cannot Create Socket.\n");
+        exit(1);
+    }
+    serv_addr.sin_family=AF_INET;
+    serv_addr.sin_port=htons(serv_port);
+    inet_aton(serv_ip,(&serv_addr.sin_addr));
+    
+    abc = connect(skfd,(struct sockaddr*)&serv_addr,sizeof(serv_addr));
+    
+    if(abc < 0)
+    {
+        printf("\nCLIENT ERROR: Cannot connect to the server.\n");
+        close(skfd);
+        exit(1);
+    }
+    
+    printf("\nCLIENT: Connected to the server.\n");
+    
+    printf("\nEnter your Command\n");
+    
+    gets(commandBuff);
+
+    
+    
+    w1 = write(skfd,commandBuff,128);
+    
+    if(w1 < 0)
+    {
+        printf("\nCLIENT ERROR: Cannot send message to the echo server.\n");
+        close(skfd);
+        exit(1);
+    }
+    else
+    {
+    printf("\nCLIENT : Command sent to echo server.\n");
+    r = read(skfd, rbuff, 128);
+    FILE *ptr = fopen("xyz","r");
+
+    while(fgets(commandRes,50,ptr)!=NULL)
+    {
+    printf("%s\n",commandRes);
+    }
+    fclose(ptr);
+    if(r < 0)
+    printf("\nCLIENT ERROR: Cannot receive message from client.\n");
+    else
+    {
+        int p = strcmp(rbuff,"Invalid Command");
+        while(p != 0){
+
+         printf("\nEnter your Command\n");
+    
+         gets(commandBuff);
+
+     w1 = write(skfd,commandBuff,128);
+     
+     if(w1 < 0)
+     {
+        printf("\nCLIENT ERROR: Cannot send message to the echo server.\n");
+        close(skfd);
+        exit(1);
+     }
+     else
+     {
+          printf("\nCLIENT : Command sent to echo server.\n\n\n");
+         r = read(skfd, rbuff, 128);
+         printf("Working");
+         rbuff[r] = '\0';
+               printf("CLIENT:Message from echo server:%s\n\n\n",rbuff);
+               FILE *ptr = fopen("xyz","r");
+
+               while(fgets(commandRes,50,ptr)!=NULL)
+               {
+            printf("%s\n",commandRes);
+               }
+               fclose(ptr);
+             p = strcmp(rbuff,"Invalid Command");
+     }
+        }
+        
+    }
+    close(skfd);
+    exit(1);
+    }
+}

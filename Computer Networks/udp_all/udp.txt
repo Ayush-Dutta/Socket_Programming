@@ -1,0 +1,894 @@
+//cal_client
+#include<sys/socket.h>
+#include<sys/types.h>
+#include<netinet/in.h>
+#include<arpa/inet.h>
+#include<string.h>
+#include<stdio.h>
+#include<stdlib.h>
+
+struct sockaddr_in servstruct, clientstruct;
+int listenfd_cli, sendconn1, sendconn2, sendconn3, recvconn, serv_len;
+unsigned int port = 8000;
+char ip[] = "127.0.0.1";
+char num1[128], num2[128], operator[2], output[128];
+
+int main()
+{
+    listenfd_cli = socket(AF_INET, SOCK_DGRAM, 0);
+    if (listenfd_cli < 0)
+    {
+        printf("\nClient Error: Cannot create socket.\n");
+        close(listenfd_cli);
+        exit(1);
+    }
+    servstruct.sin_family = AF_INET;
+    servstruct.sin_port = htons(port);
+    inet_aton(ip,(&servstruct.sin_addr));
+    printf("\nEnter the first num second number and the operator\n");
+    gets(num1);
+    gets(num2);
+    gets(operator);
+    serv_len = sizeof(servstruct);
+    sendconn1 = sendto(listenfd_cli, num1, sizeof(num1), 0, (struct sockaddr*)&servstruct, serv_len);
+    sendconn2 = sendto(listenfd_cli, num2, sizeof(num2), 0, (struct sockaddr*)&servstruct, serv_len);
+    sendconn3 = sendto(listenfd_cli, operator, sizeof(operator), 0, (struct sockaddr*)&servstruct, serv_len);
+    if (sendconn1 < 0 || sendconn2 < 0 || sendconn3 < 0)
+    {
+            printf("\nClient Error: Cannot Send.\n");
+            close(listenfd_cli);
+            exit(1);
+    }
+    recvconn = recvfrom(listenfd_cli, output, sizeof(output), 0, (struct sockaddr*)&servstruct, &serv_len);
+    if (recvconn < 0)
+    {
+        printf("\nClient Error: Cannot Receive.\n");
+        close(listenfd_cli);
+        exit(1);
+    }
+    printf("\nThe output is %s\n",output);
+    close(listenfd_cli);
+    return 0;
+}
+
+// cal_server
+
+#include<sys/socket.h>
+#include<sys/types.h>
+#include<netinet/in.h>
+#include<arpa/inet.h>
+#include<string.h>
+#include<stdio.h>
+#include<stdlib.h>
+
+struct sockaddr_in servstruct, clientstruct;
+int listenfd, bindconn, client_len, recvconn1, recvconn2, recvconn3, sendconn;
+unsigned int port = 8000;
+char ip[] = "127.0.0.1";
+char num1[128], num2[128], operator[2], output[128];
+int a, b, out;
+
+int main()
+{
+    listenfd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (listenfd < 0)
+    {
+        printf("\nServer Error: Cannot create socket.\n");
+        exit(1);
+    }
+    servstruct.sin_family = AF_INET;
+    servstruct.sin_port = htons(port);
+    inet_aton(ip,(&servstruct.sin_addr));
+    bindconn = bind(listenfd, (struct sockaddr*) &servstruct, sizeof(servstruct));
+    if (bindconn < 0)
+    {
+        printf("\nServer Error: Cannot Bind.\n");
+        close(listenfd);
+        exit(1);
+    }
+    client_len = sizeof(clientstruct);
+    recvconn1 = recvfrom(listenfd, num1, sizeof(num1), 0, (struct sockaddr*)&clientstruct, &client_len);
+    recvconn2 = recvfrom(listenfd, num2, sizeof(num2), 0, (struct sockaddr*)&clientstruct, &client_len);
+    recvconn3 = recvfrom(listenfd, operator, sizeof(operator), 0, (struct sockaddr*)&clientstruct, &client_len);
+    if (recvconn1 < 0 || recvconn2 < 0 || recvconn3 < 0)
+    {
+            printf("\nServer Error: Cannot Receive.\n");
+            close(listenfd);
+            exit(1);
+    }
+    else
+    {
+            a = atoi(num1);
+            b = atoi(num2);
+            if (operator[0] == '+')
+                out = a + b;
+            else if (operator[0] == '-')
+                out = a - b;
+            else if (operator[0] == '*')
+                out = a * b;
+            else if (operator[0] == '/' && b != '0')
+                out = a / b;
+            else
+                printf("\nWrong Operator.\n");
+            sprintf(output, "%d", out);
+            printf("\nOperation Successful.\n");
+            sendconn = sendto(listenfd, output, sizeof(output), 0, (struct sockaddr*)&clientstruct, client_len);
+            if(sendconn < 0)
+            {
+                printf("\nServer Error: Cannot Send.\n");
+                close(listenfd);
+                exit(1);
+            }
+    }
+    close(listenfd);
+    return 0;
+}
+
+
+//chat_cli
+
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
+
+struct sockaddr_in servstruct, clientstruct;
+int listenfd_cli, recvconn, sendconn, serv_len;
+unsigned int port = 6667;
+char ip[] = "127.0.0.1";
+char buff[128], msg[128];
+
+int main()
+{
+      listenfd_cli = socket(AF_INET, SOCK_DGRAM, 0);
+      if (listenfd_cli < 0)
+      {
+            printf("\n[-] CLIENT ERROR: Socket Creation failed.\n");
+            exit(1);
+      }
+      else
+            printf("\n[+] CLIENT SUCCESS: Socket Created.\n");
+      servstruct.sin_family = AF_INET;
+      servstruct.sin_port = htons(port);
+      inet_aton(ip, (&servstruct.sin_addr));
+      while(1)
+      {
+            printf("\nEnter the message (Bye to exit)\n");
+        gets(msg);
+            sendconn = sendto(listenfd_cli, msg, sizeof(msg), 0, (struct sockaddr*)&servstruct, sizeof(servstruct));
+            if (sendconn < 0)
+            {
+                   printf("\n[-] CLIENT ERROR: Send failed.\n");
+                   close(listenfd_cli);
+                   exit(1);
+            }
+            if(strcmp(msg,"Bye")==0)
+                  break;
+            else
+            {
+                  printf("\n[+] CLIENT SUCCESS: Send.\n");
+                  recvconn = recvfrom(listenfd_cli, buff, sizeof(buff), 0, (struct sockaddr*)&servstruct, &serv_len);
+                  if (recvconn < 0)
+                  {
+                        printf("\n[-] CLIENT ERROR: Receive failed.\n");
+                        close(listenfd_cli);
+                        exit(1);
+                  }
+                  else
+                  {
+                        printf("\n[+] CLIENT SUCCESS: Receive.\n");
+                        printf("\n%s\n",buff);
+                        if(strcmp(buff,"Bye")==0)
+                break;
+                  }
+            }
+      }
+      close(listenfd_cli);
+      return 0;
+}
+
+
+//chat_serv
+
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
+
+struct sockaddr_in servstruct, clientstruct;
+int listenfd, bindconn, client_len, recvconn, sendconn;
+unsigned int port = 6667;
+char ip[] = "127.0.0.1";
+char buff[128], msg[128];
+
+int main()
+{
+      listenfd = socket(AF_INET, SOCK_DGRAM, 0);
+      if (listenfd < 0)
+      {
+            printf("\n[-] SERVER ERROR: Socket Creation failed.\n");
+            exit(1);
+      }
+      else
+            printf("\n[+] SERVER SUCCESS: Socket Created.\n");
+      servstruct.sin_family = AF_INET;
+      servstruct.sin_port = htons(port);
+      inet_aton(ip, (&servstruct.sin_addr));
+      bindconn = bind(listenfd, (struct sockaddr*)&servstruct, sizeof(servstruct));
+      if (bindconn < 0)
+      {
+            printf("\n[-] SERVER ERROR: Bind failed.\n");
+            close(listenfd);
+            exit(1);
+      }
+      else
+            printf("\n[+] SERVER SUCCESS: Bind.\n");
+      while(1)
+      {
+            client_len = sizeof(clientstruct);
+            recvconn = recvfrom(listenfd, buff, sizeof(buff), 0, (struct sockaddr*)&clientstruct, &client_len);
+            if (recvconn < 0)
+            {
+                  printf("\n[-] SERVER ERROR: Receive failed.\n");
+                  close(listenfd);
+                  exit(1);
+            }
+            else
+            {
+                  printf("\n[+] SERVER SUCCESS: Receive.\n");
+                  printf("\n%s\n",buff);
+                  printf("\nEnter your message (Bye to exit)\n");
+          gets(msg);
+                  sendconn = sendto(listenfd, msg, sizeof(msg), 0, (struct sockaddr*)&clientstruct, client_len);
+                  if (sendconn < 0)
+                  {
+                        printf("\n[-] SERVER ERROR: Send failed.\n");
+                        close(listenfd);
+                        exit(1);
+                  }
+                  else
+                        printf("\n[+] SERVER SUCCESS: Send.\n");
+            }
+      }
+      close(listenfd);
+      return 0;
+}
+
+
+//pecho_cli
+
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
+
+struct sockaddr_in servstruct, clientstruct;
+int listenfd_cli, recvconn, sendconn, serv_len;
+unsigned int port = 6667;
+char ip[] = "127.0.0.1";
+char buffs[128] = "Hello, Server!", buffe[128];
+
+int main()
+{
+      listenfd_cli = socket(AF_INET, SOCK_DGRAM, 0);
+      if (listenfd_cli < 0)
+      {
+            printf("\n[-] CLIENT ERROR: Socket Creation failed.\n");
+            exit(1);
+      }
+      else
+            printf("\n[+] CLIENT SUCCESS: Socket Created.\n");
+      servstruct.sin_family = AF_INET;
+      servstruct.sin_port = htons(port);
+      inet_aton(ip, (&servstruct.sin_addr));
+      sendconn = sendto(listenfd_cli, buffs, sizeof(buffs), 0, (struct sockaddr*)&servstruct, sizeof(servstruct));
+      if (sendconn < 0)
+      {
+             printf("\n[-] CLIENT ERROR: Send failed.\n");
+             close(listenfd_cli);
+             exit(1);
+      }
+      else
+      {
+            printf("\n[+] CLIENT SUCCESS: Send.\n");
+            recvconn = recvfrom(listenfd_cli, buffe, sizeof(buffe), 0, (struct sockaddr*)&servstruct, &serv_len);
+            if (recvconn < 0)
+            {
+                  printf("\n[-] CLIENT ERROR: Receive failed.\n");
+                  close(listenfd_cli);
+                  exit(1);
+            }
+            else
+            {
+                  printf("\n[+] CLIENT SUCCESS: Receive.\n");
+                  printf("\nEchoed Back: %s\n",buffe);
+            }
+      }
+      close(listenfd_cli);
+      return 0;
+}
+
+
+//pecho_serv
+
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
+
+struct sockaddr_in servstruct, clientstruct;
+int listenfd, bindconn, client_len, recvconn, sendconn;
+unsigned int port = 6667;
+char ip[] = "127.0.0.1";
+char buff[128];
+
+int main()
+{
+      listenfd = socket(AF_INET, SOCK_DGRAM, 0);
+      if (listenfd < 0)
+      {
+            printf("\n[-] SERVER ERROR: Socket Creation failed.\n");
+            exit(1);
+      }
+      else
+            printf("\n[+] SERVER SUCCESS: Socket Created.\n");
+      servstruct.sin_family = AF_INET;
+      servstruct.sin_port = htons(port);
+      inet_aton(ip, (&servstruct.sin_addr));
+      bindconn = bind(listenfd, (struct sockaddr*)&servstruct, sizeof(servstruct));
+      if (bindconn < 0)
+      {
+            printf("\n[-] SERVER ERROR: Bind failed.\n");
+            close(listenfd);
+            exit(1);
+      }
+      else
+            printf("\n[+] SERVER SUCCESS: Bind.\n");
+      client_len = sizeof(clientstruct);
+      recvconn = recvfrom(listenfd, buff, sizeof(buff), 0, (struct sockaddr*)&clientstruct, &client_len);
+      if (recvconn < 0)
+      {
+            printf("\n[-] SERVER ERROR: Receive failed.\n");
+            close(listenfd);
+            exit(1);
+      }
+      else
+      {
+            printf("\n[+] SERVER SUCCESS: Receive.\n");
+            printf("\n%s\n",buff);
+            sendconn = sendto(listenfd, buff, sizeof(buff), 0, (struct sockaddr*)&clientstruct, client_len);
+            if (sendconn < 0)
+            {
+                  printf("\n[-] SERVER ERROR: Send failed.\n");
+                  close(listenfd);
+                  exit(1);
+            }
+            else
+                  printf("\n[+] SERVER SUCCESS: Send.\n");
+      }
+      close(listenfd);
+      return 0;
+}
+
+
+// file_cli
+
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+struct sockaddr_in servstruct, clientstruct;
+int listenfd_cli, sendconn, sendconn1, recvconn, recvconn1, serv_len;
+unsigned int port = 6667;
+char ip[] = "127.0.0.1";
+char buff1[2048], buff2[2048], buff3[2048], buff4[2048], buff5[2048];
+
+int main()
+{
+    listenfd_cli = socket(AF_INET, SOCK_DGRAM, 0);
+    if (listenfd_cli < 0)
+    {
+        printf("\nCLIENT ERROR: Cannot create socket.\n");
+        exit(1);
+    }
+    servstruct.sin_family = AF_INET;
+    servstruct.sin_port = htons(port);
+    inet_aton(ip, (&servstruct.sin_addr));
+    serv_len = sizeof(servstruct);
+    printf("\nEnter a file name/substring:\n");
+    gets(buff1);
+        sendconn = sendto(listenfd_cli, buff1, sizeof(buff1), 0, (struct sockaddr*)&servstruct, sizeof(servstruct));
+    if (sendconn < 0)
+    {
+        printf("\nCLIENT ERROR: Cannot send.\n");
+        close(listenfd_cli);
+        exit(1);
+    }
+    recvconn = recvfrom(listenfd_cli, buff2, sizeof(buff2), 0, (struct sockaddr*)&servstruct, &serv_len);
+    if (recvconn < 0)
+    {
+        printf("\nCLIENT ERROR: Cannot receive.\n");
+        close(listenfd_cli);
+        exit(1);
+    }
+    else
+        printf("\n%s\n",buff2);
+    printf("\nEnter a specific file name/substring:\n");
+    gets(buff3);
+    sendconn1 = sendto(listenfd_cli, buff3, sizeof(buff3), 0, (struct sockaddr*)&servstruct, sizeof(servstruct));
+    if (sendconn1 < 0)
+    {
+        printf("\nCLIENT ERROR: Cannot send.\n");
+        close(listenfd_cli);
+        exit(1);
+    }
+        recvconn1 = recvfrom(listenfd_cli, buff4, sizeof(buff4), 0, (struct sockaddr*)&servstruct, &serv_len);
+    if (recvconn1 < 0)
+    {
+        printf("\nCLIENT ERROR: Cannot receive.\n");
+        close(listenfd_cli);
+        exit(1);
+    }
+    else
+        printf("\n%s\n",buff4);
+    close(listenfd_cli);
+    return 0;
+}
+
+
+//file_serv
+
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+struct sockaddr_in servstruct, clientstruct;
+int listenfd, bindconn, client_len, recvconn, recvconn1, sendconn, sendconn1, sendconn2;
+unsigned int port = 6667;
+char ip[] = "127.0.0.1";
+char name[2048], name1[2048], name2[2048], content[2048], buff[2048], buff1[2048], buff2[2048], buff3[2048], buff4[2048], find[2048], ll1[2048], reply[2048];
+FILE *fp, *fp1, *fp2;
+
+int main()
+{
+    listenfd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (listenfd < 0)
+    {
+        printf("\nSERVER ERROR: Scoket Creation Failed.\n");
+        exit(1);
+    }
+    else
+            printf("\nSERVER SUCCESS: Socket Creation.\n");
+    servstruct.sin_family = AF_INET;
+    servstruct.sin_port = htons(port);
+    inet_aton(ip, (&servstruct.sin_addr));
+    bindconn = bind(listenfd, (struct sockaddr*)&servstruct, sizeof(servstruct));
+    if (bindconn < 0)
+    {
+        printf("\nSERVER ERROR: Cannot Bind.\n");
+        close(listenfd);
+        exit(1);
+    }
+    else
+            printf("\nSERVER SUCCESS: Bind.\n");
+    client_len = sizeof(clientstruct);
+        recvconn = recvfrom(listenfd, name, sizeof(name), 0, (struct sockaddr*)&clientstruct, &client_len);
+        if (recvconn < 0)
+        {
+                printf("\nSERVER ERROR: Cannot Read.\n");
+        close(listenfd);
+        exit(1);
+        }
+        else
+        {
+                strcpy(find,"find ");
+                strcat(name,"* > list");
+                strcat(find, name);
+                system(find);
+                fp = fopen("list","a+");
+                while (fgets(buff, 2048, fp)!=NULL)
+                        strcat(content, buff);
+                sendconn = sendto(listenfd, content, sizeof(content), 0, (struct sockaddr*)&clientstruct, client_len);
+                if (sendconn < 0)
+                {
+                        printf("\nSERVER ERROR: Cannot Write.\n");
+                close(listenfd);
+                exit(1);
+                }
+                recvconn1 = recvfrom(listenfd, name1, sizeof(name1), 0, (struct sockaddr*)&clientstruct, &client_len);
+                if (recvconn1 < 0)
+                {
+                        printf("\nSERVER ERROR: Cannot Read.\n");
+                close(listenfd);
+                exit(1);
+                }
+                strcpy(name2, name1);
+                strcat(name1,"> filename");
+                strcpy(ll1,"ls -l ");
+                strcat(ll1, name1);
+                system(ll1);
+                fp1 = fopen("filename","r");
+                while (fgets(buff1, 2048, fp1)!=NULL)
+                        strcat(buff2, buff1);
+                if (buff2[3]=='x')
+                {
+                        strcpy(reply,"Executable File, can't be read.");
+                        sendconn1 = sendto(listenfd, reply, sizeof(reply), 0, (struct sockaddr*)&clientstruct, client_len);
+                        if (sendconn1 < 0)
+                        {
+                                printf("\nSERVER ERROR: Cannot Write.\n");
+                        close(listenfd);
+                        exit(1);
+                        }
+                }
+                else
+                {
+                        fp2 = fopen(name2,"r");
+                        while (fgets(buff3, 2048, fp2)!=NULL)
+                                strcat(buff4, buff3);
+                        sendconn2 = sendto(listenfd, buff4, sizeof(buff4), 0, (struct sockaddr*)&clientstruct, client_len);
+                        if (sendconn2 < 0)
+                        {
+                                printf("\nSERVER ERROR: Cannot Write.\n");
+                        close(listenfd);
+                        exit(1);
+                        }
+                }
+        }
+        close(listenfd);
+        return 0;
+}
+
+
+// premote_cli
+
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+struct sockaddr_in servstruct, clientstruct;
+int listenfd_cli, serv_len, sendconn, recvconn;
+unsigned int port = 6768;
+char ip[] = "127.0.0.1";
+char buff1[256];
+char buff2[256];
+
+int main()
+{
+    listenfd_cli = socket(AF_INET, SOCK_DGRAM, 0);
+    if (listenfd_cli < 0)
+    {
+        printf("\nCLIENT ERROR: Cannot create socket.\n");
+        exit(1);
+    }
+    servstruct.sin_family = AF_INET;
+    servstruct.sin_port = htons(port);
+    inet_aton(ip, (&servstruct.sin_addr));
+    while(1)
+    {
+            serv_len = sizeof(servstruct);
+        printf("\nEnter a command (Enter END to exit): \n");
+        gets(buff1);
+        sendconn = sendto(listenfd_cli, buff1, sizeof(buff1), 0, (struct sockaddr*)&servstruct, serv_len);
+        if (sendconn < 0)
+        {
+            printf("\nCLIENT ERROR: Cannot write.\n");
+            close(listenfd_cli);
+            exit(1);
+        }
+        if (strcmp(buff1,"END")==0)
+            break;
+        recvconn = recvfrom(listenfd_cli, buff2, sizeof(buff2), 0, (struct sockaddr*)&servstruct, &serv_len);
+        if (recvconn < 0)
+        {
+            printf("\nCLIENT ERROR: Cannot read.\n");
+            close(listenfd_cli);
+            exit(1);
+        }
+        else
+            printf("\n%s\n",buff2);
+    }
+    close(listenfd_cli);
+    return 0;
+}
+
+// premote_server
+
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+struct sockaddr_in servstruct, clientstruct;
+int listenfd, bindconn, client_len, recvconn, sendconn;
+unsigned int port = 6768;
+char ip[]="127.0.0.1";
+char buff1[256], buff2[256], buff3[256];
+FILE *fp;
+
+int main()
+{
+    listenfd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (listenfd < 0)
+    {
+        printf("\nSERVER ERROR: Scoket Creation Failed.\n");
+        exit(1);
+    }
+    servstruct.sin_family = AF_INET;
+    servstruct.sin_port = htons(port);
+    inet_aton(ip, (&servstruct.sin_addr));
+    bindconn = bind(listenfd, (struct sockaddr*)&servstruct, sizeof(servstruct));
+    if (bindconn < 0)
+    {
+        printf("\nSERVER ERROR: Cannot Bind.\n");
+        close(listenfd);
+        exit(1);
+    }
+    while(1)
+    {
+        client_len = sizeof(clientstruct);
+        recvconn = recvfrom(listenfd, buff1, sizeof(buff1), 0, (struct sockaddr*)&clientstruct, &client_len);
+        if (recvconn < 0)
+        {
+            printf("\nSERVER ERROR: Cannot Receive.\n");
+            close(listenfd);
+            exit(1);
+        }
+        else
+        {
+            if (strcmp(buff1, "END")!=0)
+            {
+                strcat(buff1," > xyz");
+                system(buff1);
+                fp = fopen("xyz","a+");
+                while(fgets(buff2,256,fp)!=NULL)
+                    strcat(buff3, buff2);
+            }
+            printf("\nSUCCESSFUL!\n");
+            sendconn = sendto(listenfd, buff3, sizeof(buff3), 0, (struct sockaddr*)&clientstruct, client_len);
+            if (sendconn < 0)
+            {
+                printf("\nSERVER ERROR: Cannot Send.\n");
+                close(listenfd);
+                exit(1);
+            }
+            buff2[0]='\0';
+            buff3[0]='\0';
+        }    
+    }
+    close(listenfd);
+    return 0;
+}
+
+ 
+
+    
+    
+    
+    
+            
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
+
+struct sockaddr_in servstruct, clientstruct;
+int listenfd, bindconn, client_len, recvconn, sendconn;
+unsigned int port = 6667;
+char ip[] = "192.168.24.42";
+char buff[128], msg[128];
+
+int main()
+{
+      listenfd = socket(AF_INET, SOCK_DGRAM, 0);
+      if (listenfd < 0)
+      {
+            printf("\nSERVER ERROR: Socket Creation failed.\n");
+            exit(1);
+      }
+      else
+            printf("\nSERVER SUCCESS: Socket Created.\n");
+      servstruct.sin_family = AF_INET;
+      servstruct.sin_port = htons(port);
+      inet_aton(ip, (&servstruct.sin_addr));
+      bindconn = bind(listenfd, (struct sockaddr*)&servstruct, sizeof(servstruct));
+      if (bindconn < 0)
+      {
+            printf("\nSERVER ERROR: Bind failed.\n");
+            close(listenfd);
+            exit(1);
+      }
+      else
+            printf("\nSERVER SUCCESS: Bind.\n");
+      
+      
+            client_len = sizeof(clientstruct);
+            recvconn = recvfrom(listenfd, buff, sizeof(buff), 0, (struct sockaddr*)&clientstruct, &client_len);
+            if (recvconn < 0)
+            {
+                  printf("\n[-] SERVER ERROR: Receive failed.\n");
+                  close(listenfd);
+                  exit(1);
+            }
+            else
+            {
+                  printf("\nSERVER SUCCESS: Receive.\n");
+                  printf("\n%s\n",buff);
+                  printf("\nEnter your message (Bye to exit)\n");
+          gets(msg);
+                  sendconn = sendto(listenfd, msg, sizeof(msg), 0, (struct sockaddr*)&clientstruct, client_len);
+                  if (sendconn < 0)
+                  {
+                        printf("\nSERVER ERROR: Send failed.\n");
+                        close(listenfd);
+                        exit(1);
+                  }
+                  else
+                        printf("\nSERVER SUCCESS: Send.\n");
+            }
+      
+      close(listenfd);
+      return 0;
+}    
+        
+        
+        
+        
+        
+        
+    
+    
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
+
+struct sockaddr_in servstruct, clientstruct;
+int listenfd_cli, recvconn, sendconn, serv_len;
+unsigned int port = 6667;
+char ip[] = "192.168.24.42";
+char buff[128], msg[128];
+
+int main()
+{
+      listenfd_cli = socket(AF_INET, SOCK_DGRAM, 0);
+      if (listenfd_cli < 0)
+      {
+            printf("\n CLIENT ERROR: Socket Creation failed.\n");
+            exit(1);
+      }
+      else
+            printf("\n CLIENT SUCCESS: Socket Created.\n");
+      servstruct.sin_family = AF_INET;
+      servstruct.sin_port = htons(port);
+      inet_aton(ip, (&servstruct.sin_addr));
+      while(1)
+      {
+            printf("\nEnter the message (Bye to exit)\n");
+        gets(msg);
+            sendconn = sendto(listenfd_cli, msg, sizeof(msg), 0, (struct sockaddr*)&servstruct, sizeof(servstruct));
+            if (sendconn < 0)
+            {
+                   printf("\n CLIENT ERROR: Send failed.\n");
+                   close(listenfd_cli);
+                   exit(1);
+            }
+            if(strcmp(msg,"Bye")==0)
+                  break;
+            else
+            {
+                  printf("\n CLIENT SUCCESS: Send.\n");
+                  recvconn = recvfrom(listenfd_cli, buff, sizeof(buff), 0, (struct sockaddr*)&servstruct, &serv_len);
+                  if (recvconn < 0)
+                  {
+                        printf("\n CLIENT ERROR: Receive failed.\n");
+                        close(listenfd_cli);
+                        exit(1);
+                  }
+                  else
+                  {
+                        printf("\n CLIENT SUCCESS: Receive.\n");
+                        printf("\n%s\n",buff);
+                        if(strcmp(buff,"Bye")==0)
+                break;
+                  }
+            }
+      }
+      close(listenfd_cli);
+      return 0;
+}
+
+
+/*
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
+
+struct sockaddr_in servstruct, clientstruct;
+int listenfd_cli, recvconn, sendconn, serv_len;
+unsigned int port = 6667;
+char ip[] = "192.168.24.42";
+char buff[128], msg[128];
+
+int main()
+{
+      listenfd_cli = socket(AF_INET, SOCK_DGRAM, 0);
+      if (listenfd_cli < 0)
+      {
+            printf("\CLIENT ERROR: Socket Creation failed.\n");
+            exit(1);
+      }
+      else
+            printf("\nCLIENT SUCCESS: Socket Created.\n");
+      servstruct.sin_family = AF_INET;
+      servstruct.sin_port = htons(port);
+      inet_aton(ip, (&servstruct.sin_addr));
+
+            printf("\nUDP CILENT\n");
+        msg=="UDP CLIENT";
+            sendconn = sendto(listenfd_cli, msg, sizeof(msg), 0, (struct sockaddr*)&servstruct, sizeof(servstruct));
+            if (sendconn < 0)
+            {
+                   printf("\nCLIENT ERROR: Send failed.\n");
+                   close(listenfd_cli);
+                   exit(1);
+            }
+            
+            else
+            {
+                  printf("\nCLIENT SUCCESS: Send.\n");
+                  recvconn = recvfrom(listenfd_cli, buff, sizeof(buff), 0, (struct sockaddr*)&servstruct, &serv_len);
+                  if (recvconn < 0)
+                  {
+                        printf("\nCLIENT ERROR: Receive failed.\n");
+                        close(listenfd_cli);
+                        exit(1);
+                  }
+                  else
+                  {
+                        printf("\nCLIENT SUCCESS: Receive.\n");
+                        printf("\n%s\n",buff);
+                        
+                  }
+            }
+      
+      close(listenfd_cli);
+      return 0;
+}*/ 

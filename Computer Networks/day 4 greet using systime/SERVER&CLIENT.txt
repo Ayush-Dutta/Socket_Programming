@@ -1,0 +1,126 @@
+SERVER
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <string.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <stdlib.h>
+#include <time.h>
+ 
+struct sockaddr_in serverAddress, clientAddress;
+int serverSocketDesc, acceptDesc, writeStatus, clientAddressLen, iHour;
+unsigned short serverPort = 5800;
+char serverIP[] = "192.168.24.";
+char serverResult[128], hour[128];
+ 
+int main() {
+    serverSocketDesc = socket(AF_INET, SOCK_STREAM, 0);
+    if (serverSocketDesc < 0) {
+        printf("SERVER: Cannot create socket");
+        exit(1);
+    }
+ 
+    serverAddress.sin_family = AF_INET;
+    serverAddress.sin_port = htons(serverPort);
+    inet_aton(serverIP, (&serverAddress.sin_addr));
+ 
+    int bindStatus = bind(serverSocketDesc, (struct sockaddr*)&serverAddress, sizeof(serverAddress));
+    if (bindStatus < 0) {
+        printf("SERVER: Cannot bind.");
+        close(serverSocketDesc);
+        exit(1);
+    }
+ 
+    while (1) {
+        int listenStatus = listen(serverSocketDesc, 5);
+        if (listenStatus < 0) {
+            printf("\nSERVER ERROR: Cannot listen.\n");
+            close(serverSocketDesc);
+            exit(1);
+        }
+ 
+        clientAddressLen = sizeof(clientAddress);
+ 
+        printf("\nSERVER: Listening for clients... press ctrl + c to stop server:\n");
+        acceptDesc = accept(serverSocketDesc, (struct sockaddr*)&clientAddress, &clientAddressLen);
+        if (acceptDesc < 0) {
+            printf("\nSERVER ERROR: Cannot accept client connection.\n");
+            close(serverSocketDesc);
+            exit(1);
+        }
+        printf("\nSERVER: Connection from client %s accepted.\n", inet_ntoa(clientAddress.sin_addr));
+ 
+        time_t currentTime = time(NULL);
+        snprintf(serverResult, 128, "%s", ctime(&currentTime));
+        hour[0] = serverResult[11];
+        hour[1] = serverResult[12];
+        hour[2] = '\0';
+        iHour = atoi(hour);
+ 
+        if (iHour < 12)
+            strcat(serverResult, "\nGood Morning ");
+        else if (iHour >= 12 && iHour < 17)
+            strcat(serverResult, "\nGood Afternoon ");
+        else if (iHour >= 17 && iHour < 21)
+            strcat(serverResult, "\nGood Evening ");
+        else 
+ 
+            strcat(serverResult, "\nGood Night ");
+ 
+        strcat(serverResult, inet_ntoa(clientAddress.sin_addr));
+ 
+        writeStatus = write(acceptDesc, serverResult, 128);
+        if (writeStatus < 0)
+            printf("\nSERVER ERROR: Cannot send message to the client.\n");
+        else
+            printf("\nSERVER: Sent %s to client.\n", serverResult);
+    }
+}
+ 
+ 
+ 
+CLIENT
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+ 
+struct sockaddr_in serverAddr;
+int readStatus, clientSocketDesc;
+unsigned short serverPort = 5800;
+char serverIP[] = "192.168.24.69";
+char clientResult[128];
+ 
+int main() {
+    clientSocketDesc = socket(AF_INET, SOCK_STREAM, 0);
+    if (clientSocketDesc < 0) {
+        printf("\nCLIENT ERROR: Cannot create socket.\n");
+        exit(1);
+    }
+ 
+    serverAddr.sin_family = AF_INET;
+    serverAddr.sin_port = htons(serverPort);
+    inet_aton(serverIP, (&serverAddr.sin_addr));
+ 
+    int connectStatus = connect(clientSocketDesc, (struct sockaddr*)&serverAddr, sizeof(serverAddr));
+    if (connectStatus < 0) {
+        printf("\nCLIENT ERROR: Cannot connect to the server.\n");
+        close(clientSocketDesc);
+        exit(1);
+    }
+    printf("\nCLIENT: Connected to the server.\n");
+ 
+    readStatus = read(clientSocketDesc, clientResult, 128);
+    if (readStatus < 0)
+        printf("\nCLIENT ERROR: Cannot receive result from the server.\n");
+    else {
+        clientResult[readStatus] = '\0';
+        printf("\nCLIENT: SERVER MESSAGE: %s\n", clientResult);
+    }
+    close(clientSocketDesc);
+    exit(1);
+}
